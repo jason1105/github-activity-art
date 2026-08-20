@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GitHub Activity Art</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --accent:    #58a6ff;
+      --accent2:   #7c3aed;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --shimmer1:  #1c2230;
+      --shimmer2:  #242d3d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(88,166,255,.12), transparent);
+      pointer-events: none;
+    }
+    header h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #58a6ff, #a78bfa, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p.sub {
+      color: var(--muted);
+      margin-top: .6rem;
+      font-size: 1rem;
+    }
+    #meta {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      font-size: .85rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    #meta span { display: flex; align-items: center; gap: .4rem; }
+    #meta strong { color: var(--text); }
+
+    /* ── Stats bar ── */
+    #stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      padding: 1.2rem 2rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 100px;
+    }
+    .stat-card .val {
+      font-size: 1.7rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #58a6ff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .stat-card .label {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: .3rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* ── Nav tabs ── */
+    #tabs {
+      display: flex;
+      justify-content: center;
+      gap: .5rem;
+      padding: 1.5rem 2rem .5rem;
+    }
+    .tab-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: .55rem 1.4rem;
+      border-radius: 2rem;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab-btn:hover  { border-color: var(--accent); color: var(--text); }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(88,166,255,.18), rgba(124,58,237,.18));
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    /* ── Art panels ── */
+    #gallery {
+      padding: 1.5rem 2rem 3rem;
+      max-width: 1060px;
+      margin: 0 auto;
+    }
+    .art-panel { display: none; }
+    .art-panel.visible { display: block; animation: fadein .35s ease; }
+
+    @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .art-frame {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .art-frame img, .art-frame object {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Shimmer loader */
+    .shimmer {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, var(--shimmer1) 25%, var(--shimmer2) 50%, var(--shimmer1) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s infinite;
+      z-index: 2;
+      border-radius: inherit;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .art-frame.loaded .shimmer { display: none; }
+
+    .art-caption {
+      padding: 1rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: .8rem;
+      border-top: 1px solid var(--border);
+    }
+    .art-caption p { color: var(--muted); font-size: .875rem; }
+    .art-caption p strong { color: var(--text); }
+
+    /* Download button */
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: .45rem 1.1rem;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity .15s, transform .1s;
+    }
+    .dl-btn:hover  { opacity: .85; transform: translateY(-1px); }
+    .dl-btn:active { transform: translateY(0); }
+    .dl-btn svg { width: 14px; height: 14px; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: .82rem;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      header { padding: 2rem 1rem 1.2rem; }
+      #tabs  { gap: .3rem; }
+      .tab-btn { padding: .45rem 1rem; font-size: .8rem; }
+      #gallery { padding: 1rem 1rem 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>GitHub Activity Art</h1>
+  <p class="sub">My contribution data, transformed into generative visual art.</p>
+  <div id="meta">
+    <span>Year: <strong id="year-lbl">—</strong></span>
+    <span>Last generated: <strong id="gen-lbl">—</strong></span>
+  </div>
+</header>
+
+<section id="stats-bar">
+  <div class="stat-card"><div class="val" id="s-total">—</div><div class="label">Total Commits</div></div>
+  <div class="stat-card"><div class="val" id="s-streak">—</div><div class="label">Longest Streak</div></div>
+  <div class="stat-card"><div class="val" id="s-busiest">—</div><div class="label">Busiest Day</div></div>
+</section>
+
+<nav id="tabs">
+  <button class="tab-btn active" data-panel="skyline">Skyline</button>
+  <button class="tab-btn"        data-panel="soundwave">Soundwave</button>
+  <button class="tab-btn"        data-panel="constellation">Constellation</button>
+</nav>
+
+<main id="gallery">
+
+  <!-- Skyline -->
+  <div class="art-panel visible" id="panel-skyline">
+    <div class="art-frame" id="frame-skyline">
+      <div class="shimmer"></div>
+      <img src="art/skyline.svg" alt="Skyline artwork" loading="lazy"
+           onload="markLoaded('frame-skyline')" onerror="markLoaded('frame-skyline')"/>
+    </div>
+    <div class="art-caption">
+      <p><strong>Skyline</strong> — each week's commits build a skyscraper. Taller spires = more commits.</p>
+      <a class="dl-btn" href="art/skyline.svg" download="github-skyline.svg">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM1.75 13.5a.75.75 0 000 1.5h12.5a.75.75 0 000-1.5H1.75z"/></svg>
+        Download SVG
+      </a>
+    </div>
+  </div>
+
+  <!-- Soundwave -->
+  <div class="art-panel" id="panel-soundwave">
+    <div class="art-frame" id="frame-soundwave">
+      <div class="shimmer"></div>
+      <img src="art/soundwave.svg" alt="Soundwave artwork" loading="lazy"
+           onload="markLoaded('frame-soundwave')" onerror="markLoaded('frame-soundwave')"/>
+    </div>
+    <div class="art-caption">
+      <p><strong>Soundwave</strong> — contributions mapped to a smoothed audio waveform, coloured by momentum.</p>
+      <a class="dl-btn" href="art/soundwave.svg" download="github-soundwave.svg">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM1.75 13.5a.75.75 0 000 1.5h12.5a.75.75 0 000-1.5H1.75z"/></svg>
+        Download SVG
+      </a>
+    </div>
+  </div>
+
+  <!-- Constellation -->
+  <div class="art-panel" id="panel-constellation">
+    <div class="art-frame" id="frame-constellation">
+      <div class="shimmer"></div>
+      <img src="art/constellation.svg" alt="Constellation artwork" loading="lazy"
+           onload="markLoaded('frame-constellation')" onerror="markLoaded('frame-constellation')"/>
+    </div>
+    <div class="art-caption">
+      <p><strong>Constellation</strong> — every commit day is a star. Busier days shine brighter; nearby stars connect.</p>
+      <a class="dl-btn" href="art/constellation.svg" download="github-constellation.svg">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM1.75 13.5a.75.75 0 000 1.5h12.5a.75.75 0 000-1.5H1.75z"/></svg>
+        Download SVG
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Generated from my GitHub contribution data &mdash;
+  auto-updated on the 1st of every month via
+  <a href=".github/workflows/generate-art.yml">GitHub Actions</a>.
+</footer>
+
+<script>
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.art-panel').forEach(p => p.classList.remove('visible'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('visible');
+    });
+  });
+
+  // ── Remove shimmer once image is ready ────────────────────────────────────
+  function markLoaded(frameId) {
+    document.getElementById(frameId).classList.add('loaded');
+  }
+
+  // ── Load stats.json ───────────────────────────────────────────────────────
+  fetch('art/stats.json')
+    .then(r => r.json())
+    .then(s => {
+      document.getElementById('year-lbl').textContent    = s.year ?? '—';
+      document.getElementById('gen-lbl').textContent     = s.last_generated ?? '—';
+      document.getElementById('s-total').textContent     = (s.total_contributions ?? '—').toLocaleString();
+      document.getElementById('s-streak').textContent    = (s.longest_streak ?? '—') + (s.longest_streak ? ' days' : '');
+      document.getElementById('s-busiest').textContent   = s.busiest_day ?? '—';
+    })
+    .catch(() => {/* stats unavailable — leave placeholders */});
+</script>
+</body>
+</html>
